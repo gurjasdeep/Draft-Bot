@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="400"
+     height="300"
+     viewBox="0 0 400 300">
+
+    <!-- Circle -->
+    <circle
+        cx="80"
+        cy="80"
+        r="40"
+        fill="none"
+        stroke="black"/>
+
+    <!-- Rectangle -->
+    <rect
+        x="150"
+        y="40"
+        width="100"
+        height="80"
+        fill="none"
+        stroke="black"/>
+
+    <!-- Triangle -->
+    <polygon
+        points="300,120 350,40 400,120"
+        fill="none"
+        stroke="black"/>
+
+</svg>

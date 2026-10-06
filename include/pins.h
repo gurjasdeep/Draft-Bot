@@ -1,15 +1,31 @@
-// Left joint
-#define M1_STEP_PIN 2
-#define M1_DIR_PIN  3
-#define HOME1_PIN   4
+#ifndef PINS_H
+#define PINS_H
 
-// Right joint
-#define M2_STEP_PIN 5
-#define M2_DIR_PIN  6
-#define HOME2_PIN   7
+// ============================================================
+// STEPPER MOTOR 1 — LEFT
+// ============================================================
 
-// Pen servo
-#define PEN_SERVO_PIN 9
+#define LEFT_PULSE_PIN   2
+#define LEFT_DIR_PIN    3
+#define LEFT_LIMIT_PIN  4
+#define LEFT_ENABLE_PIN  5
 
-// Push button
-#define BUTTON_PIN 8
+// ============================================================
+// STEPPER MOTOR 2 — RIGHT
+// ============================================================
+
+#define RIGHT_PULSE_PIN   7
+#define RIGHT_DIR_PIN    8
+#define RIGHT_LIMIT_PIN  9
+#define RIGHT_ENABLE_PIN 10
+
+
+// ============================================================
+// SERVO MOTOR
+// ============================================================
+
+  #define SERVO_PIN 11
+
+
+
+#endif

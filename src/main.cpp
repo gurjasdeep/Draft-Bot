@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Servo.h>
+#include <float.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "kinematics.h"
@@ -112,6 +114,7 @@ unsigned long shapePhaseStartedAt = 0;
 
 void processSerial();
 void processCommand(char* command);
+bool parseMoveCoordinate(const char*& cursor, float& coordinate);
 
 void handleShape(const char* shapeName);
 void handleMove(float x, float y);
@@ -365,20 +368,33 @@ void processCommand(char* command)
     {
         float x;
         float y;
+        const char* cursor = command;
+
+        while (*cursor == ' ' || *cursor == '\t')
+        {
+            ++cursor;
+        }
+
+        cursor += strlen(commandType);
 
 
-        if (sscanf(
-                command,
-                "%15s %f %f",
-                commandType,
-                &x,
-                &y
-            ) != 3)
+        if (!parseMoveCoordinate(cursor, x) ||
+            !parseMoveCoordinate(cursor, y))
         {
             sendError("INVALID_MOVE_COMMAND");
             return;
         }
 
+        while (*cursor == ' ' || *cursor == '\t')
+        {
+            ++cursor;
+        }
+
+        if (*cursor != '\0')
+        {
+            sendError("INVALID_MOVE_COMMAND");
+            return;
+        }
 
         handleMove(x, y);
 
@@ -443,6 +459,35 @@ void processCommand(char* command)
     // ========================================================
 
     sendError("UNKNOWN_COMMAND");
+}
+
+bool parseMoveCoordinate(const char*& cursor, float& coordinate)
+{
+    while (*cursor == ' ' || *cursor == '\t')
+    {
+        ++cursor;
+    }
+
+    if (*cursor == '\0')
+    {
+        return false;
+    }
+
+    char* end;
+    const double parsedValue = strtod(cursor, &end);
+
+    if (end == cursor ||
+        (*end != '\0' && *end != ' ' && *end != '\t') ||
+        parsedValue != parsedValue ||
+        parsedValue > FLT_MAX ||
+        parsedValue < -FLT_MAX)
+    {
+        return false;
+    }
+
+    coordinate = static_cast<float>(parsedValue);
+    cursor = end;
+    return true;
 }
 
 

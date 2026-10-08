@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <Servo.h>
+#include <errno.h>
 #include <float.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +23,7 @@
 //
 // SHAPE CIRCLE
 // MOVE 50.5 30.2
+// STEP L +100
 // PEN DOWN
 //
 // 64 bytes is more than enough for these commands.
@@ -38,6 +41,7 @@ constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 
 constexpr float LEFT_HOME_ANGLE_DEGREES = 0.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
+constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_HIGH;
 constexpr uint8_t PEN_UP_ANGLE = 90;
 constexpr uint8_t PEN_DOWN_ANGLE = 0;
 constexpr unsigned long PEN_SETTLE_TIME_MS = 400;
@@ -87,6 +91,7 @@ enum class MotionType
 {
     NONE,
     MOVE,
+    STEP,
     SHAPE
 };
 
@@ -105,6 +110,7 @@ PathPoint shapePath[MAX_SHAPE_POINTS];
 uint16_t shapePointCount = 0;
 uint16_t shapePointIndex = 0;
 const char* activeShapeName = nullptr;
+char activeStepMotor = '\0';
 unsigned long shapePhaseStartedAt = 0;
 
 
@@ -118,6 +124,8 @@ bool parseMoveCoordinate(const char*& cursor, float& coordinate);
 
 void handleShape(const char* shapeName);
 void handleMove(float x, float y);
+bool parseStepCommand(char* command, char& motorName, long& steps);
+void handleStep(char motorName, long steps);
 void handlePen(const char* state);
 void updateMotion();
 bool setMotorTarget(float x, float y);
@@ -142,7 +150,7 @@ void setup()
     delay(100);
 
     leftMotor.begin();
-    rightMotor.begin();
+    rightMotor.begin(RIGHT_LIMIT_POLARITY);
 
     penServo.attach(SERVO_PIN);
     setPen(PenState::UP);
@@ -368,7 +376,7 @@ void processCommand(char* command)
     {
         float x;
         float y;
-        const char* cursor = command;
+        const char *cursor = command;
 
         while (*cursor == ' ' || *cursor == '\t')
         {
@@ -401,6 +409,21 @@ void processCommand(char* command)
         return;
     }
 
+    if (strcmp(commandType, "STEP") == 0)
+    {
+        char motorName;
+        long steps;
+
+        if (!parseStepCommand(command, motorName, steps))
+        {
+            sendError("INVALID_STEP_COMMAND");
+            return;
+        }
+
+        handleStep(motorName, steps);
+        return;
+    }
+
     if (strcmp(commandType, "HOME") == 0)
     {
         if (activeMotion != MotionType::NONE)
@@ -411,8 +434,33 @@ void processCommand(char* command)
 
         setPen(PenState::UP);
         robotHomed = false;
-        leftMotor.home(HomingDirection::HOME_LEFT);
-        rightMotor.home(HomingDirection::HOME_RIGHT);
+        const HomingResult leftHome =
+            leftMotor.home(HomingDirection::HOME_LEFT);
+        if (leftHome != HomingResult::SUCCESS)
+        {
+            sendError(
+                leftHome == HomingResult::TIMEOUT
+                    ? "HOME_TIMEOUT_LEFT"
+                    : "HOME_LIMIT_NOT_CONFIGURED_LEFT"
+            );
+            return;
+        }
+
+        const HomingResult rightHome =
+            rightMotor.home(
+                HomingDirection::HOME_RIGHT,
+                RIGHT_LIMIT_POLARITY
+            );
+        if (rightHome != HomingResult::SUCCESS)
+        {
+            sendError(
+                rightHome == HomingResult::TIMEOUT
+                    ? "HOME_TIMEOUT_RIGHT"
+                    : "HOME_LIMIT_NOT_CONFIGURED_RIGHT"
+            );
+            return;
+        }
+
         leftMotor.setAngle(LEFT_HOME_ANGLE_DEGREES);
         rightMotor.setAngle(RIGHT_HOME_ANGLE_DEGREES);
         robotHomed = true;
@@ -459,6 +507,75 @@ void processCommand(char* command)
     // ========================================================
 
     sendError("UNKNOWN_COMMAND");
+}
+
+bool parseStepCommand(char* command, char& motorName, long& steps)
+{
+    const char* cursor = command;
+
+    while (*cursor == ' ' || *cursor == '\t')
+    {
+        ++cursor;
+    }
+
+    cursor += strlen("STEP");
+
+    if (*cursor != ' ' && *cursor != '\t')
+    {
+        return false;
+    }
+
+    while (*cursor == ' ' || *cursor == '\t')
+    {
+        ++cursor;
+    }
+
+    if (*cursor != 'L' && *cursor != 'R')
+    {
+        return false;
+    }
+
+    motorName = *cursor++;
+
+    if (*cursor != ' ' && *cursor != '\t')
+    {
+        return false;
+    }
+
+    while (*cursor == ' ' || *cursor == '\t')
+    {
+        ++cursor;
+    }
+
+    if (*cursor != '+' && *cursor != '-')
+    {
+        return false;
+    }
+
+    errno = 0;
+    char* end;
+    const long parsedSteps = strtol(cursor, &end, 10);
+
+    if (end == cursor ||
+        errno == ERANGE ||
+        parsedSteps == 0 ||
+        (*end != '\0' && *end != ' ' && *end != '\t'))
+    {
+        return false;
+    }
+
+    while (*end == ' ' || *end == '\t')
+    {
+        ++end;
+    }
+
+    if (*end != '\0')
+    {
+        return false;
+    }
+
+    steps = parsedSteps;
+    return true;
 }
 
 bool parseMoveCoordinate(const char*& cursor, float& coordinate)
@@ -616,6 +733,33 @@ void handleMove(float x, float y)
     Serial.println("OK MOVE STARTED");
 }
 
+void handleStep(char motorName, long steps)
+{
+    if (activeMotion != MotionType::NONE)
+    {
+        sendError("MOTION_BUSY");
+        return;
+    }
+
+    Stepper& motor = motorName == 'L' ? leftMotor : rightMotor;
+    const long currentPosition = motor.getPosition();
+
+    if ((steps > 0 && currentPosition > LONG_MAX - steps) ||
+        (steps < 0 && currentPosition < LONG_MIN - steps))
+    {
+        sendError("STEP_POSITION_OVERFLOW");
+        return;
+    }
+
+    motor.moveTo(currentPosition + steps);
+    activeStepMotor = motorName;
+    activeMotion = MotionType::STEP;
+
+    Serial.print("OK STEP ");
+    Serial.print(motorName);
+    Serial.println(" STARTED");
+}
+
 
 // ============================================================
 // HANDLE PEN COMMAND
@@ -683,6 +827,15 @@ void updateMotion()
     {
         activeMotion = MotionType::NONE;
         Serial.println("DONE MOVE");
+        return;
+    }
+
+    if (activeMotion == MotionType::STEP)
+    {
+        activeMotion = MotionType::NONE;
+        Serial.print("DONE STEP ");
+        Serial.println(activeStepMotor);
+        activeStepMotor = '\0';
         return;
     }
 

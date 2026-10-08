@@ -1,5 +1,7 @@
 #include "stepper.h"
 
+unsigned int STEPPER_DELAY_MICROSECONDS = 800;
+
 Stepper::Stepper(
     uint8_t stepPin,
     uint8_t dirPin,
@@ -22,14 +24,10 @@ Stepper::Stepper(
 
     _moving = false;
     _direction = true;
-
-    _stepDelayMicros = 500;
-
-    _lastStepTime = 0;
 }
 
 
-void Stepper::begin()
+void Stepper::begin(LimitPolarity limitPolarity)
 {
     pinMode(_stepPin, OUTPUT);
     pinMode(_dirPin, OUTPUT);
@@ -41,7 +39,12 @@ void Stepper::begin()
 
     if (_limitPin != 255)
     {
-        pinMode(_limitPin, INPUT_PULLUP);
+        pinMode(
+            _limitPin,
+            limitPolarity == LimitPolarity::ACTIVE_LOW
+                ? INPUT_PULLUP
+                : INPUT
+        );
     }
 
     digitalWrite(_stepPin, LOW);
@@ -67,12 +70,12 @@ void Stepper::enable()
      * ENA+ -> Arduino output
      * ENA- -> GND
      *
-     * and HIGH enables the driver.
+     * and LOW enables the driver.
      *
      * If your TB6600 behaves opposite, invert this.
      */
 
-    digitalWrite(_enablePin, HIGH);
+    digitalWrite(_enablePin, LOW);
 }
 
 
@@ -83,52 +86,63 @@ void Stepper::disable()
         return;
     }
 
-    digitalWrite(_enablePin, LOW);
+    digitalWrite(_enablePin, HIGH);
 }
 
 
-void Stepper::home(HomingDirection direction)
+HomingResult Stepper::home(
+    HomingDirection direction,
+    LimitPolarity limitPolarity,
+    unsigned long timeoutMs
+)
 {
     if (_limitPin == 255)
     {
-        return;
+        return HomingResult::LIMIT_NOT_CONFIGURED;
     }
 
-    if (direction == HomingDirection::HOME_LEFT)
-    {
-        digitalWrite(_dirPin, LOW);
-    }
-    else
-    {
-        digitalWrite(_dirPin, HIGH);
-    }
+    const uint8_t homeDirection =
+        direction == HomingDirection::HOME_LEFT ? LOW : HIGH;
+    const unsigned long startedAt = millis();
 
     enable();
+    digitalWrite(_dirPin, homeDirection);
 
-    while (digitalRead(_limitPin) == HIGH)
+    while (!isLimitTriggered(limitPolarity))
     {
+        if (millis() - startedAt >= timeoutMs)
+        {
+            disable();
+            _moving = false;
+            _targetPosition = _position;
+            return HomingResult::TIMEOUT;
+        }
+
         digitalWrite(_stepPin, HIGH);
-        delayMicroseconds(1000);
+        delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
 
         digitalWrite(_stepPin, LOW);
-        delayMicroseconds(1000);
+        delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
     }
 
     disable();
     zero();
     _moving = false;
     _targetPosition = 0;
+    return HomingResult::SUCCESS;
 }
 
 
-bool Stepper::isLimitTriggered() const
+bool Stepper::isLimitTriggered(LimitPolarity limitPolarity) const
 {
     if (_limitPin == 255)
     {
         return false;
     }
 
-    return digitalRead(_limitPin) == LOW;
+    const int activeLevel =
+        limitPolarity == LimitPolarity::ACTIVE_LOW ? LOW : HIGH;
+    return digitalRead(_limitPin) == activeLevel;
 }
 
 
@@ -213,28 +227,14 @@ void Stepper::moveToAngle(float angle)
 void Stepper::update()
 {
     if (!_moving)
-        return;
-
-    unsigned long now = micros();
-
-    if ((unsigned long)(now - _lastStepTime) <
-        _stepDelayMicros)
     {
         return;
     }
 
-    _lastStepTime = now;
-
-    /*
-     * Generate one STEP pulse.
-     *
-     * TB6600 detects the rising edge.
-     */
     digitalWrite(_stepPin, HIGH);
-
-    delayMicroseconds(5);
-
+    delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
     digitalWrite(_stepPin, LOW);
+    delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
 
     // Update our software position.
     if (_direction)
@@ -258,5 +258,5 @@ bool Stepper::isMoving() const
 
 void Stepper::setStepDelay(unsigned int microseconds)
 {
-    _stepDelayMicros = microseconds;
+    STEPPER_DELAY_MICROSECONDS = microseconds;
 }

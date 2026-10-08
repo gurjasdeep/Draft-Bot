@@ -8,6 +8,21 @@ enum class HomingDirection
     HOME_RIGHT
 };
 
+enum class HomingResult
+{
+    SUCCESS,
+    TIMEOUT,
+    LIMIT_NOT_CONFIGURED
+};
+
+enum class LimitPolarity
+{
+    ACTIVE_LOW,
+    ACTIVE_HIGH
+};
+
+extern unsigned int STEPPER_DELAY_MICROSECONDS;
+
 inline float radiansToDegrees(float radians)
 {
     constexpr float PI_ = 3.14159265358979323846f;
@@ -26,15 +41,21 @@ public:
         uint8_t limitPin = 255
     );
 
-    void begin();
+    void begin(LimitPolarity limitPolarity = LimitPolarity::ACTIVE_LOW);
 
     // TB6600 enable control
     void enable();
     void disable();
 
     // Homing
-    void home(HomingDirection direction = HomingDirection::HOME_LEFT);
-    bool isLimitTriggered() const;
+    HomingResult home(
+        HomingDirection direction = HomingDirection::HOME_LEFT,
+        LimitPolarity limitPolarity = LimitPolarity::ACTIVE_LOW,
+        unsigned long timeoutMs = 30000
+    );
+    bool isLimitTriggered(
+        LimitPolarity limitPolarity = LimitPolarity::ACTIVE_LOW
+    ) const;
 
     // Position
     void setPosition(long steps);
@@ -76,8 +97,4 @@ private:
 
     bool _moving;
     bool _direction;
-
-    unsigned int _stepDelayMicros;
-
-    unsigned long _lastStepTime;
 };

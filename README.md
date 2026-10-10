@@ -27,14 +27,16 @@ Connect to the board at 115200 baud and send newline-terminated serial commands:
   test does not require homing.
 - `PEN UP` and `PEN DOWN` move the pen servo when no motion is active.
 
-The first shape is centered at `(21.2 mm, 200 mm)`. Each successfully completed
-shape advances the next shape in the positive X direction, leaving a 5 mm gap
-between their horizontal bounds while keeping the same Y position. Shape
-points are checked for IK reachability before the motors start, so a shape is
-rejected if it is outside the robot's reachable workspace. Successful motion
-reports a `DONE` line when complete. Moves and shape edges are interpolated as
-straight-line paths for the pen tip, with Cartesian waypoints spaced at most
-0.5 mm apart.
+The first shape is centered at `(21.2 mm, 200 mm)`. The first three completed
+shapes are placed left-to-right with a 5 mm gap between their horizontal
+bounds. The next three return to the first column and are placed below the
+first row, with a 5 mm vertical gap from its lowest shape. After six completed
+shapes, the firmware reports `PAGE FULL` and rejects further shape commands.
+Shape points are checked for IK reachability before the motors start, so a
+shape is rejected if it is outside the robot's reachable workspace.
+Successful motion reports a `DONE` line when complete. Moves and shape edges
+are interpolated as straight-line paths for the pen tip, with Cartesian
+waypoints spaced at most 0.5 mm apart.
 
 The firmware currently assumes 200 full steps per motor revolution, four
 microsteps, and pen-servo positions of 90 degrees up and 0 degrees down. Match

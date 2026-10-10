@@ -104,7 +104,8 @@ enum class ShapeMotionPhase
     MOVING_TO_START,
     LOWERING_PEN,
     DRAWING,
-    RAISING_PEN
+    RAISING_PEN,
+    RETURNING_HOME
 };
 
 MotionType activeMotion = MotionType::NONE;
@@ -899,6 +900,14 @@ void updateMotion()
             return;
         }
 
+        shapeMotionPhase = ShapeMotionPhase::RETURNING_HOME;
+        leftMotor.moveToAngle(LEFT_HOME_ANGLE_DEGREES);
+        rightMotor.moveToAngle(RIGHT_HOME_ANGLE_DEGREES);
+        return;
+    }
+
+    if (shapeMotionPhase == ShapeMotionPhase::RETURNING_HOME)
+    {
         activeMotion = MotionType::NONE;
         Serial.print("DONE SHAPE ");
         Serial.println(activeShapeName);

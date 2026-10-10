@@ -51,7 +51,7 @@ uint16_t generateSquare(PathPoint* buffer,uint16_t maxPoints,float centerX,float
 // The triangle is centered approximately around
 // (centerX, centerY).
 //
-// size = side length in millimetres.
+// size = vertical height in millimetres.
 //
 // The final point is the same as the first point.
 //
@@ -66,7 +66,7 @@ uint16_t generateTriangle(
     uint16_t maxPoints,
     float centerX,
     float centerY,
-    float size
+    float height
 );
 
 

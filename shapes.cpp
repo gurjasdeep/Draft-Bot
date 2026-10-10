@@ -108,7 +108,7 @@ uint16_t generateTriangle(
     uint16_t maxPoints,
     float centerX,
     float centerY,
-    float size
+    float height
 )
 {
     // Three vertices + first vertex repeated.
@@ -123,9 +123,7 @@ uint16_t generateTriangle(
     // EQUILATERAL TRIANGLE GEOMETRY
     // ========================================================
     //
-    // For an equilateral triangle:
-    //
-    // height = sqrt(3) / 2 * side
+    // For an equilateral triangle, base width = 2 * height / sqrt(3).
     //
     // We place the triangle with one vertex pointing upward.
     //
@@ -139,8 +137,8 @@ uint16_t generateTriangle(
     //
     // ========================================================
 
-    const float height =
-        sqrt(3.0f) * size / 2.0f;
+    const float baseWidth =
+        2.0f * height / sqrt(3.0f);
 
 
     // We want the geometric centre of the triangle to be
@@ -172,7 +170,7 @@ uint16_t generateTriangle(
 
     buffer[1] =
     {
-        centerX - size / 2.0f,
+        centerX - baseWidth / 2.0f,
         bottomY
     };
 
@@ -181,7 +179,7 @@ uint16_t generateTriangle(
 
     buffer[2] =
     {
-        centerX + size / 2.0f,
+        centerX + baseWidth / 2.0f,
         bottomY
     };
 

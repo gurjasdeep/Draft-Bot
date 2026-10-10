@@ -1,6 +1,6 @@
 #include "stepper.h"
 
-unsigned int STEPPER_DELAY_MICROSECONDS = 800;
+unsigned int STEPPER_DELAY_MICROSECONDS = 8000;
 
 Stepper::Stepper(
     uint8_t stepPin,

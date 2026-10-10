@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <float.h>
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,14 +35,15 @@ constexpr uint16_t CIRCLE_SEGMENTS = 36;
 constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
-constexpr uint8_t MOTOR_MICROSTEPS = 4;
+constexpr uint8_t MOTOR_MICROSTEPS = 8;
 
-constexpr float DEFAULT_SHAPE_CENTER_X = BASE_DISTANCE / 2.0f;
-constexpr float DEFAULT_SHAPE_CENTER_Y = 100.0f;
-constexpr float DEFAULT_SHAPE_SIZE = 30.0f;
+constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
+constexpr float DEFAULT_SHAPE_CENTER_Y = 200.0f;
+constexpr float DEFAULT_SHAPE_SIZE = 50.0f;
 constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
+constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
 
-constexpr float LEFT_HOME_ANGLE_DEGREES = 0.0f;
+constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
 constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_LOW;
 constexpr uint8_t PEN_UP_ANGLE = 90;
@@ -84,8 +86,7 @@ Stepper rightMotor(
     RIGHT_ENABLE_PIN,
     MOTOR_STEPS_PER_REVOLUTION,
     MOTOR_MICROSTEPS,
-    RIGHT_LIMIT_PIN,
-    true
+    RIGHT_LIMIT_PIN
 );
 
 Servo penServo;
@@ -116,6 +117,11 @@ uint16_t shapePointIndex = 0;
 const char* activeShapeName = nullptr;
 char activeStepMotor = '\0';
 unsigned long shapePhaseStartedAt = 0;
+Point2D cartesianPathStart = {};
+Point2D cartesianPathTarget = {};
+uint16_t cartesianSegmentCount = 0;
+uint16_t cartesianSegmentIndex = 0;
+bool cartesianPathActive = false;
 
 
 // ============================================================
@@ -133,6 +139,8 @@ void handleStep(char motorName, long steps);
 void handlePen(const char* state);
 void updateMotion();
 bool setMotorTarget(float x, float y);
+void setMotorAngles(const IKResult& result);
+void startNextCartesianSegment();
 void setPen(PenState state);
 void finishShape();
 
@@ -828,15 +836,105 @@ void handlePen(const char* state)
 
 bool setMotorTarget(float x, float y)
 {
-    const IKResult result = inverseKinematics(x, y);
-    if (!result.valid)
+    const IKResult targetResult = inverseKinematics(x, y);
+    if (!targetResult.valid)
     {
         return false;
     }
 
-    leftMotor.moveToAngle(radiansToDegrees(result.leftAngle));
-    rightMotor.moveToAngle(radiansToDegrees(result.rightAngle));
+    const float degreesToRadians =
+        3.14159265358979323846f / 180.0f;
+    if (!forwardKinematics(
+            leftMotor.getAngle() * degreesToRadians,
+            rightMotor.getAngle() * degreesToRadians,
+            cartesianPathStart
+        ))
+    {
+        return false;
+    }
+
+    const float deltaX = x - cartesianPathStart.x;
+    const float deltaY = y - cartesianPathStart.y;
+    const float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
+    const float segmentCount = ceilf(
+        distance / MAX_CARTESIAN_SEGMENT_MM
+    );
+
+    cartesianSegmentCount =
+        segmentCount < 1.0f ? 1 : static_cast<uint16_t>(segmentCount);
+    cartesianSegmentIndex = 0;
+    cartesianPathTarget = {x, y};
+
+    IKResult firstSegmentResult = {};
+    for (uint16_t segment = 1; segment <= cartesianSegmentCount; ++segment)
+    {
+        const float fraction =
+            static_cast<float>(segment) / cartesianSegmentCount;
+        const IKResult result = inverseKinematics(
+            cartesianPathStart.x + deltaX * fraction,
+            cartesianPathStart.y + deltaY * fraction
+        );
+        if (!result.valid)
+        {
+            cartesianPathActive = false;
+            return false;
+        }
+
+        if (segment == 1)
+        {
+            firstSegmentResult = result;
+        }
+    }
+
+    cartesianPathActive = true;
+    cartesianSegmentIndex = 1;
+    setMotorAngles(firstSegmentResult);
     return true;
+}
+
+void setMotorAngles(const IKResult& result)
+{
+    const float degreesToRadians =
+        3.14159265358979323846f / 180.0f;
+    const float leftCurrentAngle = leftMotor.getAngle();
+    const float rightCurrentAngle = rightMotor.getAngle();
+    const float leftDelta = result.leftAngle -
+        leftCurrentAngle * degreesToRadians;
+    const float rightDelta = result.rightAngle -
+        rightCurrentAngle * degreesToRadians;
+
+    leftMotor.moveToAngle(
+        leftCurrentAngle +
+        radiansToDegrees(atan2f(sinf(leftDelta), cosf(leftDelta)))
+    );
+    rightMotor.moveToAngle(
+        rightCurrentAngle +
+        radiansToDegrees(atan2f(sinf(rightDelta), cosf(rightDelta)))
+    );
+}
+
+void startNextCartesianSegment()
+{
+    ++cartesianSegmentIndex;
+    const float fraction =
+        static_cast<float>(cartesianSegmentIndex) / cartesianSegmentCount;
+    const float x = cartesianPathStart.x +
+        (cartesianPathTarget.x - cartesianPathStart.x) * fraction;
+    const float y = cartesianPathStart.y +
+        (cartesianPathTarget.y - cartesianPathStart.y) * fraction;
+    const IKResult result = inverseKinematics(x, y);
+
+    if (!result.valid)
+    {
+        cartesianPathActive = false;
+        activeMotion = MotionType::NONE;
+        setPen(PenState::UP);
+        activeShapeName = nullptr;
+        sendError("UNREACHABLE_PATH");
+        return;
+    }
+
+    setMotorAngles(result);
 }
 
 void setPen(PenState state)
@@ -858,6 +956,17 @@ void updateMotion()
     if (leftMotor.isMoving() || rightMotor.isMoving())
     {
         return;
+    }
+
+    if (cartesianPathActive)
+    {
+        if (cartesianSegmentIndex < cartesianSegmentCount)
+        {
+            startNextCartesianSegment();
+            return;
+        }
+
+        cartesianPathActive = false;
     }
 
     if (activeMotion == MotionType::MOVE)

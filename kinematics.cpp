@@ -1,5 +1,5 @@
 #include "kinematics.h"
-#include <Arduino.h>
+#include <stdint.h>
 #include <math.h>
 
 
@@ -374,7 +374,7 @@ IKResult inverseKinematics(float penX, float penY)
         // Pen is too close for the required geometry.
         return result;
     }
-
+    
 
     // ========================================================
     // SPECIAL CASE
@@ -940,4 +940,102 @@ IKResult inverseKinematics(float penX, float penY)
     result.valid = true;
 
     return result;
+}
+
+bool forwardKinematics(
+    float leftAngle,
+    float rightAngle,
+    Point2D& penPoint
+)
+{
+    const Point2D leftElbow =
+    {
+        L1 * cos(leftAngle),
+        L1 * sin(leftAngle)
+    };
+
+    const Point2D rightElbow =
+    {
+        BASE_DISTANCE + L1 * cos(rightAngle),
+        L1 * sin(rightAngle)
+    };
+
+    const float dx = rightElbow.x - leftElbow.x;
+    const float dy = rightElbow.y - leftElbow.y;
+    const float elbowDistance = sqrt(dx * dx + dy * dy);
+
+    if (elbowDistance < EPSILON ||
+        elbowDistance > 2.0f * L2 + EPSILON)
+    {
+        return false;
+    }
+
+    const float halfDistance = elbowDistance / 2.0f;
+    float heightSquared = L2 * L2 - halfDistance * halfDistance;
+    if (heightSquared < 0.0f)
+    {
+        heightSquared = 0.0f;
+    }
+
+    const float height = sqrt(heightSquared);
+    const float midpointX = (leftElbow.x + rightElbow.x) / 2.0f;
+    const float midpointY = (leftElbow.y + rightElbow.y) / 2.0f;
+    const float perpendicularX = -dy / elbowDistance;
+    const float perpendicularY = dx / elbowDistance;
+
+    const Point2D centers[] =
+    {
+        {
+            midpointX + height * perpendicularX,
+            midpointY + height * perpendicularY
+        },
+        {
+            midpointX - height * perpendicularX,
+            midpointY - height * perpendicularY
+        }
+    };
+
+    bool found = false;
+    float bestAngleError = 0.0f;
+
+    for (uint8_t i = 0; i < 2; ++i)
+    {
+        const float directionX =
+            (centers[i].x - leftElbow.x) / L2;
+        const float directionY =
+            (centers[i].y - leftElbow.y) / L2;
+
+        const Point2D candidatePen =
+        {
+            centers[i].x + PEN_OFFSET * directionX,
+            centers[i].y + PEN_OFFSET * directionY
+        };
+
+        const IKResult candidate =
+            inverseKinematics(candidatePen.x, candidatePen.y);
+        if (!candidate.valid)
+        {
+            continue;
+        }
+
+        const float leftError = atan2(
+            sin(candidate.leftAngle - leftAngle),
+            cos(candidate.leftAngle - leftAngle)
+        );
+        const float rightError = atan2(
+            sin(candidate.rightAngle - rightAngle),
+            cos(candidate.rightAngle - rightAngle)
+        );
+        const float angleError =
+            leftError * leftError + rightError * rightError;
+
+        if (!found || angleError < bestAngleError)
+        {
+            penPoint = candidatePen;
+            bestAngleError = angleError;
+            found = true;
+        }
+    }
+
+    return found;
 }

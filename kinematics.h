@@ -1,22 +1,31 @@
 #pragma once
 
 // Distance between the two fixed motor shafts.
-// Example:150 mm
-
+//
+// Example:
+//     150 mm
+//
 constexpr float BASE_DISTANCE = 42.5f;
 
+
 // Motor → passive joint.
+//
 // This is the first link on each side.
+//
 constexpr float L1 = 100.0f;
 
 
 // Passive joint → central revolute joint.
+//
 // This is the normal second link length.
+//
 constexpr float L2 = 132.0f;
 
 
 // Distance from the central revolute joint to the pen.
+//
 // This is the extra part of the second link extending beyond C.
+//
 constexpr float PEN_OFFSET = 68.0f;
 
 

@@ -31,6 +31,13 @@ in `DraftBot.ino` to the hardware before drawing. The current home-angle
 references are 180 degrees for the left link and 0 degrees for the right link,
 measured from +X. Update `LEFT_HOME_ANGLE_DEGREES` /
 `RIGHT_HOME_ANGLE_DEGREES` if the arm positions at the home switches differ.
+Inverse kinematics also limits the left link between
+`atan2(LINK_WIDTH, BASE_DISTANCE)` and `LEFT_HOME_ANGLE_DEGREES`; `LINK_WIDTH`
+is currently 20 mm. The right link is limited between
+`RIGHT_HOME_ANGLE_DEGREES` and `180 degrees - atan2(LINK_WIDTH,
+BASE_DISTANCE)`. These constraints are based on the current link-clearance
+geometry. The default square is 49 mm per side because a 50 mm square centered
+at the configured shape center exceeds this constrained workspace.
 The right motor direction is inverted in software so positive motion moves
 away from either home switch. The driver
 enable outputs are active-low: they

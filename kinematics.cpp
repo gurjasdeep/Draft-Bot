@@ -566,6 +566,26 @@ IKResult inverseKinematics(float penX, float penY)
         penDirection +
         ELBOW_SIGN * leftOffset;
 
+    constexpr float TWO_PI = 6.28318530717958647692f;
+    while (result.leftAngle < 0.0f)
+    {
+        result.leftAngle += TWO_PI;
+    }
+    while (result.leftAngle >= TWO_PI)
+    {
+        result.leftAngle -= TWO_PI;
+    }
+
+    const float minimumLeftAngle =
+        atan2f(LINK_WIDTH, BASE_DISTANCE);
+    const float maximumLeftAngle =
+        LEFT_HOME_ANGLE_DEGREES * TWO_PI / 360.0f;
+    if (result.leftAngle < minimumLeftAngle - EPSILON ||
+        result.leftAngle > maximumLeftAngle + EPSILON)
+    {
+        return result;
+    }
+
 
     // ========================================================
     // CALCULATE LEFT ELBOW POSITION
@@ -839,6 +859,26 @@ IKResult inverseKinematics(float penX, float penY)
     result.rightAngle =
         rightDirection +
         RIGHT_ELBOW_SIGN * rightOffset;
+
+    while (result.rightAngle < 0.0f)
+    {
+        result.rightAngle += TWO_PI;
+    }
+    while (result.rightAngle >= TWO_PI)
+    {
+        result.rightAngle -= TWO_PI;
+    }
+
+    const float minimumRightAngle =
+        RIGHT_HOME_ANGLE_DEGREES * TWO_PI / 360.0f;
+    const float maximumRightAngle =
+        TWO_PI / 2.0f -
+        atan2f(LINK_WIDTH, BASE_DISTANCE);
+    if (result.rightAngle < minimumRightAngle - EPSILON ||
+        result.rightAngle > maximumRightAngle + EPSILON)
+    {
+        return result;
+    }
 
 
     // ========================================================

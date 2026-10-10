@@ -15,22 +15,26 @@ Connect to the board at 115200 baud and send newline-terminated serial commands:
   error. Both limit switches are currently configured active-low and use
   `INPUT_PULLUP`; adjust `RIGHT_LIMIT_POLARITY` in `DraftBot.ino` if the right
   switch wiring differs.
-- `SHAPE SQUARE`, `SHAPE TRIANGLE`, `SHAPE PENTAGON`, or `SHAPE CIRCLE` draws a shape.
+- `SHAPE SQUARE [side_mm]`, `SHAPE TRIANGLE [side_mm]`,
+  `SHAPE PENTAGON [side_mm]`, or `SHAPE CIRCLE [diameter_mm]` draws a shape.
+  The size argument is optional; if omitted, the default is 100 mm. Polygon
+  sizes are side lengths, while the circle size is its diameter. For example,
+  `SHAPE SQUARE 40` draws a square with 40 mm sides and `SHAPE CIRCLE 60`
+  draws a circle with a 60 mm diameter. Sizes must be positive numbers.
 - `MOVE x y` moves the pen tip to an `(x, y)` coordinate in millimetres.
 - `STEP L +100` or `STEP R +100` moves the selected motor away from its home
   switch; a negative step count moves it toward the switch. This direct motor
   test does not require homing.
 - `PEN UP` and `PEN DOWN` move the pen servo when no motion is active.
 
-The first shape is centered at `(21.2 mm, 200 mm)`. The square and triangle
-have a 50 mm side; the circle has a 25 mm radius and is approximated with 36
-segments. Each successfully completed shape advances the next shape 55 mm in
-the positive X direction, leaving a 5 mm gap while keeping the same Y
-position. Shape points are checked for IK reachability before the motors
-start, so a later shape is rejected if its position is outside the robot's
-reachable workspace. Successful motion reports a `DONE` line when complete.
-Moves and shape edges are interpolated as straight-line paths for the pen tip,
-with Cartesian waypoints spaced at most 1 mm apart.
+The first shape is centered at `(21.2 mm, 200 mm)`. Each successfully completed
+shape advances the next shape in the positive X direction, leaving a 5 mm gap
+between their horizontal bounds while keeping the same Y position. Shape
+points are checked for IK reachability before the motors start, so a shape is
+rejected if it is outside the robot's reachable workspace. Successful motion
+reports a `DONE` line when complete. Moves and shape edges are interpolated as
+straight-line paths for the pen tip, with Cartesian waypoints spaced at most
+0.5 mm apart.
 
 The firmware currently assumes 200 full steps per motor revolution, four
 microsteps, and pen-servo positions of 90 degrees up and 0 degrees down. Match

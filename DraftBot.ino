@@ -24,6 +24,8 @@
 // SHAPE CIRCLE
 // MOVE 50.5 30.2
 // STEP L +100
+// HOME
+// HOME TEST
 // PEN DOWN
 //
 // 64 bytes is more than enough for these commands.
@@ -32,7 +34,7 @@ constexpr uint16_t CIRCLE_SEGMENTS = 36;
 constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
-constexpr uint8_t MOTOR_MICROSTEPS = 1;
+constexpr uint8_t MOTOR_MICROSTEPS = 4;
 
 constexpr float DEFAULT_SHAPE_CENTER_X = BASE_DISTANCE / 2.0f;
 constexpr float DEFAULT_SHAPE_CENTER_Y = 100.0f;
@@ -41,7 +43,7 @@ constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 
 constexpr float LEFT_HOME_ANGLE_DEGREES = 0.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
-constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_HIGH;
+constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_LOW;
 constexpr uint8_t PEN_UP_ANGLE = 90;
 constexpr uint8_t PEN_DOWN_ANGLE = 0;
 constexpr unsigned long PEN_SETTLE_TIME_MS = 400;
@@ -82,7 +84,8 @@ Stepper rightMotor(
     RIGHT_ENABLE_PIN,
     MOTOR_STEPS_PER_REVOLUTION,
     MOTOR_MICROSTEPS,
-    RIGHT_LIMIT_PIN
+    RIGHT_LIMIT_PIN,
+    true
 );
 
 Servo penServo;
@@ -429,6 +432,39 @@ void processCommand(char* command)
         if (activeMotion != MotionType::NONE)
         {
             sendError("MOTION_BUSY");
+            return;
+        }
+
+        char homeMode[16] = {};
+        const int parsedHomeMode =
+            sscanf(
+                command,
+                "%15s %15s",
+                commandType,
+                homeMode
+            );
+
+        // Allow a manual "software home" for bench testing when
+        // limit switches are not installed yet.
+        if (parsedHomeMode == 2 &&
+            (
+                strcmp(homeMode, "TEST") == 0 ||
+                strcmp(homeMode, "FAKE") == 0 ||
+                strcmp(homeMode, "FORCE") == 0 ||
+                strcmp(homeMode, "SIMULATE") == 0
+            ))
+        {
+            setPen(PenState::UP);
+            leftMotor.setAngle(LEFT_HOME_ANGLE_DEGREES);
+            rightMotor.setAngle(RIGHT_HOME_ANGLE_DEGREES);
+            robotHomed = true;
+            Serial.println("OK HOME");
+            return;
+        }
+
+        if (parsedHomeMode != 1)
+        {
+            sendError("INVALID_HOME_COMMAND");
             return;
         }
 

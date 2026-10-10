@@ -27,6 +27,7 @@ Connect to the board at 115200 baud and send newline-terminated serial commands:
   test does not require homing.
 - `PEN UP` and `PEN DOWN` move the pen servo when no motion is active.
 
+
 The first shape is centered at `(21.2 mm, 200 mm)`. Each successfully completed
 shape advances the next shape in the positive X direction, leaving a 5 mm gap
 between their horizontal bounds while keeping the same Y position. Shape

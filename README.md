@@ -21,6 +21,8 @@ Shapes are centered at `(100 mm, 100 mm)`. The square and triangle have a
 40 mm side; the circle has a 20 mm radius and is approximated with 36
 segments. A shape is checked for IK reachability before the motors start.
 Successful motion reports a `DONE` line when complete.
+Moves and shape edges are interpolated as straight-line paths for the pen tip,
+with Cartesian waypoints spaced at most 1 mm apart.
 
 The firmware currently assumes 200 full steps per motor revolution, four
 microsteps, and pen-servo positions of 90 degrees up and 0 degrees down. Match

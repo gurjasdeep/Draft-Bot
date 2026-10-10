@@ -41,7 +41,6 @@ constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
 constexpr float DEFAULT_SHAPE_CENTER_Y = 200.0f;
 constexpr float DEFAULT_SHAPE_SIZE = 100.0f;
 constexpr float SHAPE_GAP_MM = 5.0f;
-constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 constexpr float MAX_CARTESIAN_SEGMENT_MM = 0.5f;
 
 constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
@@ -117,6 +116,7 @@ PathPoint shapePath[MAX_SHAPE_POINTS];
 uint16_t shapePointCount = 0;
 uint16_t shapePointIndex = 0;
 float nextShapeCenterX = DEFAULT_SHAPE_CENTER_X;
+float activeShapeWidth = 0.0f;
 const char* activeShapeName = nullptr;
 char activeStepMotor = '\0';
 unsigned long shapePhaseStartedAt = 0;
@@ -135,7 +135,7 @@ void processSerial();
 void processCommand(char* command);
 bool parseMoveCoordinate(const char*& cursor, float& coordinate);
 
-void handleShape(const char* shapeName);
+void handleShape(const char* shapeName, float size);
 void handleMove(float x, float y);
 bool parseStepCommand(char* command, char& motorName, long& steps);
 void handleStep(char motorName, long steps);
@@ -348,29 +348,45 @@ void processCommand(char* command)
     // Expected:
     //
     //     SHAPE SQUARE
-    //     SHAPE TRIANGLE
-    //     SHAPE CIRCLE
+    //     SHAPE TRIANGLE 40
+    //     SHAPE CIRCLE 50
     //
     // ========================================================
 
     if (strcmp(commandType, "SHAPE") == 0)
     {
         char shapeName[20];
-
-
-        if (sscanf(
+        char sizeText[32];
+        char extra[2];
+        const int shapeArguments = sscanf(
                 command,
-                "%15s %19s",
+                "%15s %19s %31s %1s",
                 commandType,
-                shapeName
-            ) != 2)
+                shapeName,
+                sizeText,
+                extra
+            );
+
+        if (shapeArguments < 2 || shapeArguments > 3)
         {
             sendError("INVALID_SHAPE_COMMAND");
             return;
         }
 
+        float size = DEFAULT_SHAPE_SIZE;
+        if (shapeArguments == 3)
+        {
+            const char* sizeCursor = sizeText;
+            if (!parseMoveCoordinate(sizeCursor, size) ||
+                *sizeCursor != '\0' ||
+                size <= 0.0f)
+            {
+                sendError("INVALID_SHAPE_SIZE");
+                return;
+            }
+        }
 
-        handleShape(shapeName);
+        handleShape(shapeName, size);
 
         return;
     }
@@ -676,7 +692,7 @@ bool parseMoveCoordinate(const char*& cursor, float& coordinate)
 // HANDLE SHAPE COMMAND
 // ============================================================
 
-void handleShape(const char* shapeName)
+void handleShape(const char* shapeName, float size)
 {
     if (strcmp(shapeName, "SQUARE") != 0 &&
         strcmp(shapeName, "TRIANGLE") != 0 &&
@@ -710,7 +726,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_SHAPE_SIZE
+            size
         );
         activeShapeName = "SQUARE";
     }
@@ -721,7 +737,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_SHAPE_SIZE
+            size
         );
         activeShapeName = "TRIANGLE";
     }
@@ -732,7 +748,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_SHAPE_SIZE
+            size
         );
         activeShapeName = "PENTAGON";
     }
@@ -743,7 +759,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_CIRCLE_RADIUS,
+            size / 2.0f,
             CIRCLE_SEGMENTS
         );
         activeShapeName = "CIRCLE";
@@ -767,6 +783,21 @@ void handleShape(const char* shapeName)
             return;
         }
     }
+
+    float minX = shapePath[0].x;
+    float maxX = shapePath[0].x;
+    for (uint16_t i = 1; i < generatedPoints; ++i)
+    {
+        if (shapePath[i].x < minX)
+        {
+            minX = shapePath[i].x;
+        }
+        if (shapePath[i].x > maxX)
+        {
+            maxX = shapePath[i].x;
+        }
+    }
+    activeShapeWidth = maxX - minX;
 
     shapePointCount = generatedPoints;
     shapePointIndex = 0;
@@ -1058,7 +1089,7 @@ void updateMotion()
         activeMotion = MotionType::NONE;
         Serial.print("DONE SHAPE ");
         Serial.println(activeShapeName);
-        nextShapeCenterX += DEFAULT_SHAPE_SIZE + SHAPE_GAP_MM;
+        nextShapeCenterX += activeShapeWidth + SHAPE_GAP_MM;
         activeShapeName = nullptr;
         return;
     }

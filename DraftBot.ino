@@ -31,17 +31,17 @@
 //
 // 64 bytes is more than enough for these commands.
 constexpr uint16_t COMMAND_BUFFER_SIZE = 64;
-constexpr uint16_t CIRCLE_SEGMENTS = 36;
+constexpr uint16_t CIRCLE_SEGMENTS = 128;
 constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
 constexpr uint8_t MOTOR_MICROSTEPS = 8;
 
-constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
-constexpr float DEFAULT_SHAPE_CENTER_Y = 200.0f;
-constexpr float DEFAULT_SHAPE_SIZE = 100.0f;
-constexpr float SHAPE_GAP_MM = 5.0f;
-constexpr float MAX_CARTESIAN_SEGMENT_MM = 0.5f;
+
+constexpr float DEFAULT_SHAPE_CENTER_X = 100.0f;
+constexpr float DEFAULT_SHAPE_CENTER_Y = 100.0f;
+constexpr float DEFAULT_SHAPE_SIZE = 40.0f;
+constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 
 constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
@@ -1162,3 +1162,4 @@ void sendError(const char* message)
     Serial.print("ERROR ");
     Serial.println(message);
 }
+

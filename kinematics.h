@@ -1,11 +1,28 @@
 #pragma once
 
+/*
+CURRENT LIMITS AS IT SEEMS:
+Bottom-left: (-84, 200)
+Top-right: (142, 264)
+Size: 226 × 64 mm
+TODO: test this physically.
+*/
+
 // Distance between the two fixed motor shafts.
 //
 // Example:
 //     150 mm
 //
 constexpr float BASE_DISTANCE = 42.5f;
+
+// Minimum clearance height used to set the left-link angle limit.
+constexpr float LINK_WIDTH = 20.0f;
+
+// Maximum left-link angle, measured counterclockwise from +X.
+constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
+
+// Minimum right-link angle, measured counterclockwise from +X.
+constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
 
 
 // Motor → passive joint.

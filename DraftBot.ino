@@ -43,8 +43,6 @@ constexpr float DEFAULT_SHAPE_SIZE = 50.0f;
 constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
 
-constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
-constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
 constexpr uint8_t PEN_UP_ANGLE = 90;
 constexpr uint8_t PEN_DOWN_ANGLE = 0;
 constexpr unsigned long PEN_SETTLE_TIME_MS = 400;

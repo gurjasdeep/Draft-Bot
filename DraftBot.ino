@@ -45,7 +45,6 @@ constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
 
 constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
-constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_LOW;
 constexpr uint8_t PEN_UP_ANGLE = 90;
 constexpr uint8_t PEN_DOWN_ANGLE = 0;
 constexpr unsigned long PEN_SETTLE_TIME_MS = 400;
@@ -162,7 +161,7 @@ void setup()
     delay(100);
 
     leftMotor.begin();
-    rightMotor.begin(RIGHT_LIMIT_POLARITY);
+    rightMotor.begin();
 
     penServo.attach(SERVO_PIN);
     setPen(PenState::UP);
@@ -493,8 +492,7 @@ void processCommand(char* command)
 
         const HomingResult rightHome =
             rightMotor.home(
-                HomingDirection::HOME_RIGHT,
-                RIGHT_LIMIT_POLARITY
+                HomingDirection::HOME_RIGHT
             );
         if (rightHome != HomingResult::SUCCESS)
         {

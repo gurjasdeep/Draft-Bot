@@ -17,10 +17,13 @@ Connect to the board at 115200 baud and send newline-terminated serial commands:
   test does not require homing.
 - `PEN UP` and `PEN DOWN` move the pen servo when no motion is active.
 
-Shapes are centered at `(100 mm, 100 mm)`. The square and triangle have a
-40 mm side; the circle has a 20 mm radius and is approximated with 36
-segments. A shape is checked for IK reachability before the motors start.
-Successful motion reports a `DONE` line when complete.
+The first shape is centered at `(21.2 mm, 200 mm)`. The square and triangle
+have a 50 mm side; the circle has a 25 mm radius and is approximated with 36
+segments. Each successfully completed shape advances the next shape 55 mm in
+the positive X direction, leaving a 5 mm gap while keeping the same Y
+position. Shape points are checked for IK reachability before the motors
+start, so a later shape is rejected if its position is outside the robot's
+reachable workspace. Successful motion reports a `DONE` line when complete.
 Moves and shape edges are interpolated as straight-line paths for the pen tip,
 with Cartesian waypoints spaced at most 1 mm apart.
 

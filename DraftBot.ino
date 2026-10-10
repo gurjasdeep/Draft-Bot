@@ -39,10 +39,10 @@ constexpr uint8_t MOTOR_MICROSTEPS = 8;
 
 constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
 constexpr float DEFAULT_SHAPE_CENTER_Y = 200.0f;
-constexpr float DEFAULT_SHAPE_SIZE = 50.0f;
+constexpr float DEFAULT_SHAPE_SIZE = 100.0f;
 constexpr float SHAPE_GAP_MM = 5.0f;
 constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
-constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
+constexpr float MAX_CARTESIAN_SEGMENT_MM = 0.5f;
 
 constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
@@ -97,7 +97,8 @@ enum class MotionType
     NONE,
     MOVE,
     STEP,
-    SHAPE
+    SHAPE,
+    HOME
 };
 
 enum class ShapeMotionPhase
@@ -455,8 +456,8 @@ void processCommand(char* command)
                 homeMode
             );
 
-        // Allow a manual "software home" for bench testing when
-        // limit switches are not installed yet.
+        // Set the current physical pose as the software home
+        // reference when the arm is already positioned manually.
         if (parsedHomeMode == 2 &&
             (
                 strcmp(homeMode, "TEST") == 0 ||
@@ -473,7 +474,23 @@ void processCommand(char* command)
             return;
         }
 
-        if (parsedHomeMode != 1)
+        if (parsedHomeMode == 1)
+        {
+            if (!robotHomed)
+            {
+                sendError("NOT_HOMED");
+                return;
+            }
+
+            setPen(PenState::UP);
+            leftMotor.moveToAngle(LEFT_HOME_ANGLE_DEGREES);
+            rightMotor.moveToAngle(RIGHT_HOME_ANGLE_DEGREES);
+            activeMotion = MotionType::HOME;
+            Serial.println("OK HOME STARTED");
+            return;
+        }
+
+        if (parsedHomeMode != 2 || strcmp(homeMode, "LIMIT") != 0)
         {
             sendError("INVALID_HOME_COMMAND");
             return;
@@ -663,6 +680,7 @@ void handleShape(const char* shapeName)
 {
     if (strcmp(shapeName, "SQUARE") != 0 &&
         strcmp(shapeName, "TRIANGLE") != 0 &&
+        strcmp(shapeName, "PENTAGON") != 0 &&
         strcmp(shapeName, "CIRCLE") != 0)
     {
         sendError("UNKNOWN_SHAPE");
@@ -706,6 +724,17 @@ void handleShape(const char* shapeName)
             DEFAULT_SHAPE_SIZE
         );
         activeShapeName = "TRIANGLE";
+    }
+    else if (strcmp(shapeName, "PENTAGON") == 0)
+    {
+        generatedPoints = generatePentagon(
+            shapePath,
+            MAX_SHAPE_POINTS,
+            centerX,
+            centerY,
+            DEFAULT_SHAPE_SIZE
+        );
+        activeShapeName = "PENTAGON";
     }
     else if (strcmp(shapeName, "CIRCLE") == 0)
     {
@@ -984,6 +1013,13 @@ void updateMotion()
         Serial.print("DONE STEP ");
         Serial.println(activeStepMotor);
         activeStepMotor = '\0';
+        return;
+    }
+
+    if (activeMotion == MotionType::HOME)
+    {
+        activeMotion = MotionType::NONE;
+        Serial.println("DONE HOME");
         return;
     }
 

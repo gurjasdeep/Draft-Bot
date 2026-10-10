@@ -196,6 +196,48 @@ uint16_t generateTriangle(
 
 
 // ============================================================
+// generatePentagon()
+// ============================================================
+
+uint16_t generatePentagon(
+    PathPoint* buffer,
+    uint16_t maxPoints,
+    float centerX,
+    float centerY,
+    float size
+)
+{
+    if (buffer == nullptr || maxPoints < 6)
+    {
+        return 0;
+    }
+
+    if (size <= 0.0f)
+    {
+        return 0;
+    }
+
+    const float radius =
+        size / (2.0f * sinf(PI / 5.0f));
+
+    for (uint16_t i = 0; i < 5; i++)
+    {
+        const float angle =
+            -PI / 2.0f + (static_cast<float>(i) * 2.0f * PI / 5.0f);
+
+        buffer[i] =
+        {
+            centerX + radius * cosf(angle),
+            centerY + radius * sinf(angle)
+        };
+    }
+
+    buffer[5] = buffer[0];
+    return 6;
+}
+
+
+// ============================================================
 // generateCircle()
 // ============================================================
 

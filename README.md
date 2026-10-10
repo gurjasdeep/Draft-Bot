@@ -5,12 +5,17 @@ Our Problem statement is a DraftBot
 
 Connect to the board at 115200 baud and send newline-terminated serial commands:
 
-- `HOME` homes both stepper motors. Run this before issuing motion commands.
-  Each motor has 30 seconds to trigger its limit switch; otherwise the command
-  reports a timeout error. Both limit switches are currently configured
-  active-low and use `INPUT_PULLUP`; adjust `RIGHT_LIMIT_POLARITY` in
-  `DraftBot.ino` if the right switch wiring differs.
-- `SHAPE SQUARE`, `SHAPE TRIANGLE`, or `SHAPE CIRCLE` draws a shape.
+- Place the arm in its calibrated home pose and send `HOME TEST` once after
+  startup to establish the software position reference. This command sets the
+  position in software; it does not move the motors.
+- `HOME` returns both motors to the configured home angles after the software
+  position has been established. The move reports `DONE HOME` when complete.
+- `HOME LIMIT` homes both motors using their limit switches. Each motor has
+  30 seconds to trigger its switch; otherwise the command reports a timeout
+  error. Both limit switches are currently configured active-low and use
+  `INPUT_PULLUP`; adjust `RIGHT_LIMIT_POLARITY` in `DraftBot.ino` if the right
+  switch wiring differs.
+- `SHAPE SQUARE`, `SHAPE TRIANGLE`, `SHAPE PENTAGON`, or `SHAPE CIRCLE` draws a shape.
 - `MOVE x y` moves the pen tip to an `(x, y)` coordinate in millimetres.
 - `STEP L +100` or `STEP R +100` moves the selected motor away from its home
   switch; a negative step count moves it toward the switch. This direct motor

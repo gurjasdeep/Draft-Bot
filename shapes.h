@@ -71,6 +71,30 @@ uint16_t generateTriangle(
 
 
 // ============================================================
+// Generate a regular pentagon.
+//
+// The pentagon is centered around (centerX, centerY).
+//
+// size = distance between two adjacent vertices.
+//
+// The final point is the same as the first point.
+//
+// Returns:
+//     Number of points written.
+//
+// Returns 0 if the buffer is too small.
+// ============================================================
+
+uint16_t generatePentagon(
+    PathPoint* buffer,
+    uint16_t maxPoints,
+    float centerX,
+    float centerY,
+    float size
+);
+
+
+// ============================================================
 // Generate a circle.
 //
 // centerX / centerY = circle centre
@@ -102,3 +126,5 @@ uint16_t generateCircle(
     float radius,
     uint16_t segments
 );
+
+

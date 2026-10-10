@@ -54,6 +54,7 @@ class Stepper
 private:
   int stepPin;
   int dirPin;
+  int pulsePin;
 
 public:
 
@@ -180,8 +181,8 @@ const int PEN_UP_ANGLE = 0;
 const int PEN_DOWN_ANGLE = 30;
 
 // Motors
-Stepperjoint motor1(LEFT_DIR_PIN,LEFT_ENABLE_PIN,LEFT_PULSE_PIN);
-Stepperjoint motor2(RIGHT_DIR_PIN,RIGHT_ENABLE_PIN,RIGHT_PULSE_PIN);
+Stepper::Stepperjoint motor1(LEFT_DIR_PIN,LEFT_ENABLE_PIN,LEFT_PULSE_PIN);
+Stepper::Stepperjoint motor2(RIGHT_DIR_PIN,RIGHT_ENABLE_PIN,RIGHT_PULSE_PIN);
 
 
 

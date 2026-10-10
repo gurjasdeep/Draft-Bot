@@ -1,5 +1,6 @@
 #include "pins.h"
-
+#include "home.h"
+#include <Arduino.h>
 // -----------------------------
 // SETTINGS
 // -----------------------------

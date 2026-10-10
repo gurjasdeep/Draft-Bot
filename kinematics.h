@@ -5,7 +5,7 @@
 // Example:
 //     150 mm
 //
-constexpr float BASE_DISTANCE = 150.0f;
+constexpr float BASE_DISTANCE = 42.5f;
 
 
 // Motor → passive joint.
@@ -19,7 +19,7 @@ constexpr float L1 = 100.0f;
 //
 // This is the normal second link length.
 //
-constexpr float L2 = 100.0f;
+constexpr float L2 = 135.0f;
 
 
 // Distance from the central revolute joint to the pen.

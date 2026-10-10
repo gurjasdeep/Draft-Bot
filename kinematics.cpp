@@ -1,5 +1,4 @@
 #include "kinematics.h"
-#include <stdint.h>
 #include <math.h>
 
 
@@ -970,35 +969,31 @@ bool forwardKinematics(
         return false;
     }
 
-    const float halfDistance = elbowDistance / 2.0f;
-    float heightSquared = L2 * L2 - halfDistance * halfDistance;
-    if (heightSquared < 0.0f)
+    const float lineAngle = atan2f(dy, dx);
+    float halfAngleCosine = elbowDistance / (2.0f * L2);
+    if (halfAngleCosine > 1.0f)
     {
-        heightSquared = 0.0f;
+        halfAngleCosine = 1.0f;
     }
 
-    const float height = sqrt(heightSquared);
-    const float midpointX = (leftElbow.x + rightElbow.x) / 2.0f;
-    const float midpointY = (leftElbow.y + rightElbow.y) / 2.0f;
-    const float perpendicularX = -dy / elbowDistance;
-    const float perpendicularY = dx / elbowDistance;
+    const float halfAngle = acosf(halfAngleCosine);
 
     const Point2D centers[] =
     {
         {
-            midpointX + height * perpendicularX,
-            midpointY + height * perpendicularY
+            leftElbow.x + L2 * cosf(lineAngle + halfAngle),
+            leftElbow.y + L2 * sinf(lineAngle + halfAngle)
         },
         {
-            midpointX - height * perpendicularX,
-            midpointY - height * perpendicularY
+            leftElbow.x + L2 * cosf(lineAngle - halfAngle),
+            leftElbow.y + L2 * sinf(lineAngle - halfAngle)
         }
     };
 
     bool found = false;
     float bestAngleError = 0.0f;
 
-    for (uint8_t i = 0; i < 2; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         const float directionX =
             (centers[i].x - leftElbow.x) / L2;

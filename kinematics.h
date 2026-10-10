@@ -19,14 +19,14 @@ constexpr float L1 = 100.0f;
 //
 // This is the normal second link length.
 //
-constexpr float L2 = 135.0f;
+constexpr float L2 = 132.0f;
 
 
 // Distance from the central revolute joint to the pen.
 //
 // This is the extra part of the second link extending beyond C.
 //
-constexpr float PEN_OFFSET = 30.0f;
+constexpr float PEN_OFFSET = 68.0f;
 
 
 // Small tolerance used when dealing with floating-point
@@ -87,3 +87,8 @@ struct IKResult
 };
 
 IKResult inverseKinematics(float penX, float penY);
+bool forwardKinematics(
+    float leftAngle,
+    float rightAngle,
+    Point2D& penPoint
+);

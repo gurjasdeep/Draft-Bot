@@ -40,6 +40,7 @@ constexpr uint8_t MOTOR_MICROSTEPS = 8;
 constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
 constexpr float DEFAULT_SHAPE_CENTER_Y = 200.0f;
 constexpr float DEFAULT_SHAPE_SIZE = 50.0f;
+constexpr float SHAPE_GAP_MM = 5.0f;
 constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
 
@@ -114,6 +115,7 @@ ShapeMotionPhase shapeMotionPhase = ShapeMotionPhase::MOVING_TO_START;
 PathPoint shapePath[MAX_SHAPE_POINTS];
 uint16_t shapePointCount = 0;
 uint16_t shapePointIndex = 0;
+float nextShapeCenterX = DEFAULT_SHAPE_CENTER_X;
 const char* activeShapeName = nullptr;
 char activeStepMotor = '\0';
 unsigned long shapePhaseStartedAt = 0;
@@ -679,7 +681,7 @@ void handleShape(const char* shapeName)
         return;
     }
 
-    const float centerX = DEFAULT_SHAPE_CENTER_X;
+    const float centerX = nextShapeCenterX;
     const float centerY = DEFAULT_SHAPE_CENTER_Y;
     uint16_t generatedPoints = 0;
 
@@ -1020,6 +1022,7 @@ void updateMotion()
         activeMotion = MotionType::NONE;
         Serial.print("DONE SHAPE ");
         Serial.println(activeShapeName);
+        nextShapeCenterX += DEFAULT_SHAPE_SIZE + SHAPE_GAP_MM;
         activeShapeName = nullptr;
         return;
     }
@@ -1092,4 +1095,3 @@ void sendError(const char* message)
     Serial.print("ERROR ");
     Serial.println(message);
 }
->>>>>>> gurjas

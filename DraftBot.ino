@@ -117,6 +117,9 @@ uint16_t shapePointCount = 0;
 uint16_t shapePointIndex = 0;
 float nextShapeCenterX = DEFAULT_SHAPE_CENTER_X;
 float activeShapeWidth = 0.0f;
+float activeShapeMinY = 0.0f;
+float firstRowMinY = FLT_MAX;
+uint8_t completedShapeCount = 0;
 const char* activeShapeName = nullptr;
 char activeStepMotor = '\0';
 unsigned long shapePhaseStartedAt = 0;
@@ -355,26 +358,24 @@ void processCommand(char* command)
 
     if (strcmp(commandType, "SHAPE") == 0)
     {
-        char shapeName[20];
         char sizeText[32];
         char extra[2];
         const int shapeArguments = sscanf(
                 command,
-                "%15s %19s %31s %1s",
-                commandType,
+                "%*s %19s %31s %1s",
                 shapeName,
                 sizeText,
                 extra
             );
 
-        if (shapeArguments < 2 || shapeArguments > 3)
+        if (shapeArguments < 1 || shapeArguments > 2)
         {
             sendError("INVALID_SHAPE_COMMAND");
             return;
         }
 
         float size = DEFAULT_SHAPE_SIZE;
-        if (shapeArguments == 3)
+        if (shapeArguments == 2)
         {
             const char* sizeCursor = sizeText;
             if (!parseMoveCoordinate(sizeCursor, size) ||
@@ -386,7 +387,7 @@ void processCommand(char* command)
             }
         }
 
-        handleShape(shapeName, size);
+        handleShape(commandType, size);
 
         return;
     }
@@ -715,6 +716,12 @@ void handleShape(const char* shapeName, float size)
         return;
     }
 
+    if (completedShapeCount >= 6)
+    {
+        Serial.println("PAGE FULL");
+        return;
+    }
+
     const float centerX = nextShapeCenterX;
     const float centerY = DEFAULT_SHAPE_CENTER_Y;
     uint16_t generatedPoints = 0;
@@ -771,6 +778,41 @@ void handleShape(const char* shapeName, float size)
         return;
     }
 
+    float minX = shapePath[0].x;
+    float maxX = shapePath[0].x;
+    float minY = shapePath[0].y;
+    float maxY = shapePath[0].y;
+    for (uint16_t i = 1; i < generatedPoints; ++i)
+    {
+        if (shapePath[i].x < minX)
+        {
+            minX = shapePath[i].x;
+        }
+        if (shapePath[i].x > maxX)
+        {
+            maxX = shapePath[i].x;
+        }
+        if (shapePath[i].y < minY)
+        {
+            minY = shapePath[i].y;
+        }
+        if (shapePath[i].y > maxY)
+        {
+            maxY = shapePath[i].y;
+        }
+    }
+
+    if (completedShapeCount >= 3)
+    {
+        const float yOffset =
+            firstRowMinY - SHAPE_GAP_MM - maxY;
+        for (uint16_t i = 0; i < generatedPoints; ++i)
+        {
+            shapePath[i].y += yOffset;
+        }
+        minY += yOffset;
+    }
+
     for (uint16_t i = 0; i < generatedPoints; ++i)
     {
         const IKResult result =
@@ -784,20 +826,8 @@ void handleShape(const char* shapeName, float size)
         }
     }
 
-    float minX = shapePath[0].x;
-    float maxX = shapePath[0].x;
-    for (uint16_t i = 1; i < generatedPoints; ++i)
-    {
-        if (shapePath[i].x < minX)
-        {
-            minX = shapePath[i].x;
-        }
-        if (shapePath[i].x > maxX)
-        {
-            maxX = shapePath[i].x;
-        }
-    }
     activeShapeWidth = maxX - minX;
+    activeShapeMinY = minY;
 
     shapePointCount = generatedPoints;
     shapePointIndex = 0;
@@ -1089,7 +1119,26 @@ void updateMotion()
         activeMotion = MotionType::NONE;
         Serial.print("DONE SHAPE ");
         Serial.println(activeShapeName);
-        nextShapeCenterX += activeShapeWidth + SHAPE_GAP_MM;
+        ++completedShapeCount;
+        if (completedShapeCount == 3)
+        {
+            nextShapeCenterX = DEFAULT_SHAPE_CENTER_X;
+        }
+        else
+        {
+            nextShapeCenterX += activeShapeWidth + SHAPE_GAP_MM;
+        }
+
+        if (completedShapeCount <= 3 && activeShapeMinY < firstRowMinY)
+        {
+            firstRowMinY = activeShapeMinY;
+        }
+
+        if (completedShapeCount == 6)
+        {
+            Serial.println("PAGE FULL");
+        }
+
         activeShapeName = nullptr;
         return;
     }

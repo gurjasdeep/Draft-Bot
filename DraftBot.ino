@@ -36,12 +36,12 @@ constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
 constexpr uint8_t MOTOR_MICROSTEPS = 4;
 
-constexpr float DEFAULT_SHAPE_CENTER_X = BASE_DISTANCE / 2.0f;
+constexpr float DEFAULT_SHAPE_CENTER_X = 100.0f;
 constexpr float DEFAULT_SHAPE_CENTER_Y = 100.0f;
-constexpr float DEFAULT_SHAPE_SIZE = 30.0f;
+constexpr float DEFAULT_SHAPE_SIZE = 40.0f;
 constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 
-constexpr float LEFT_HOME_ANGLE_DEGREES = 0.0f;
+constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
 constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_LOW;
 constexpr uint8_t PEN_UP_ANGLE = 90;
@@ -84,8 +84,7 @@ Stepper rightMotor(
     RIGHT_ENABLE_PIN,
     MOTOR_STEPS_PER_REVOLUTION,
     MOTOR_MICROSTEPS,
-    RIGHT_LIMIT_PIN,
-    true
+    RIGHT_LIMIT_PIN
 );
 
 Servo penServo;

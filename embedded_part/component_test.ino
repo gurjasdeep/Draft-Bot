@@ -1,6 +1,5 @@
 #include "pins.h"
-
-#include "pins.h"
+#include "home.h"
 #include <Servo.h>
 
 // ======================================================
@@ -314,6 +313,7 @@ void printMenu()
   Serial.println(F("5 - Test Push Button"));
   Serial.println(F("6 - Test Both Motors"));
   Serial.println(F("7 - Show All Inputs"));
+  Serial.println(F("h - HOME"));
   Serial.println(F("m - Show Menu"));
 
   Serial.println();
@@ -374,6 +374,18 @@ void handleCommand(char command)
 
       break;
 
+    case 'h':
+    case 'H':
+
+      Serial.println(F("Homing Motors"));
+
+      homeMotor(LEFT_PULSE_PIN,LEFT_DIR_PIN,LEFT_LIMIT_PIN,LOW);
+      homeMotor(RIGHT_PULSE_PIN,RIGHT_DIR_PIN,RIGHT_LIMIT_PIN,HIGH);
+
+      Serial.println(F("Motors Homed"));
+
+      break;
+
 
     case 'm':
     case 'M':
@@ -398,7 +410,7 @@ void handleCommand(char command)
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
 
   // Start motors

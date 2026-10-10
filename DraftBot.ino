@@ -22,7 +22,7 @@
 //
 // Examples:
 //
-// SHAPE CIRCLE
+// SHAPE CIRCLE 100 100 40
 // MOVE 50.5 30.2
 // STEP L +100
 // HOME
@@ -37,10 +37,6 @@ constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
 constexpr uint8_t MOTOR_MICROSTEPS = 8;
 
-constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
-constexpr float DEFAULT_SHAPE_CENTER_Y = 200.0f;
-constexpr float DEFAULT_SHAPE_SIZE = 50.0f;
-constexpr float DEFAULT_CIRCLE_RADIUS = DEFAULT_SHAPE_SIZE / 2.0f;
 constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
 
 constexpr uint8_t PEN_UP_ANGLE = 90;
@@ -129,7 +125,12 @@ void processSerial();
 void processCommand(char* command);
 bool parseMoveCoordinate(const char*& cursor, float& coordinate);
 
-void handleShape(const char* shapeName);
+void handleShape(
+    const char* shapeName,
+    float centerX,
+    float centerY,
+    float size
+);
 void handleMove(float x, float y);
 bool parseStepCommand(char* command, char& motorName, long& steps);
 void handleStep(char motorName, long steps);
@@ -190,7 +191,7 @@ void loop()
 //
 // The PC sends commands such as:
 //
-//     SHAPE CIRCLE\n
+//     SHAPE CIRCLE 100 100 40\n
 //     MOVE 50 30\n
 //     PEN DOWN\n
 //
@@ -297,7 +298,7 @@ void processSerial()
 //
 // Examples:
 //
-//     SHAPE CIRCLE
+//     SHAPE CIRCLE 100 100 40
 //     MOVE 50 30
 //     PEN DOWN
 //
@@ -341,30 +342,64 @@ void processCommand(char* command)
     //
     // Expected:
     //
-    //     SHAPE SQUARE
-    //     SHAPE TRIANGLE
-    //     SHAPE CIRCLE
+    //     SHAPE SQUARE 100 100 40
+    //     SHAPE TRIANGLE 100 100 40
+    //     SHAPE CIRCLE 100 100 40
     //
     // ========================================================
 
     if (strcmp(commandType, "SHAPE") == 0)
     {
         char shapeName[20];
+        const char* cursor = command;
+        while (*cursor == ' ' || *cursor == '\t')
+        {
+            ++cursor;
+        }
+        cursor += strlen(commandType);
 
+        while (*cursor == ' ' || *cursor == '\t')
+        {
+            ++cursor;
+        }
 
-        if (sscanf(
-                command,
-                "%15s %19s",
-                commandType,
-                shapeName
-            ) != 2)
+        size_t shapeNameLength = 0;
+        while (*cursor != '\0' && *cursor != ' ' && *cursor != '\t')
+        {
+            if (shapeNameLength >= sizeof(shapeName) - 1)
+            {
+                sendError("INVALID_SHAPE_COMMAND");
+                return;
+            }
+
+            shapeName[shapeNameLength++] = *cursor++;
+        }
+        shapeName[shapeNameLength] = '\0';
+
+        float centerX;
+        float centerY;
+        float size;
+        if (shapeNameLength == 0 ||
+            !parseMoveCoordinate(cursor, centerX) ||
+            !parseMoveCoordinate(cursor, centerY) ||
+            !parseMoveCoordinate(cursor, size))
         {
             sendError("INVALID_SHAPE_COMMAND");
             return;
         }
 
+        while (*cursor == ' ' || *cursor == '\t')
+        {
+            ++cursor;
+        }
 
-        handleShape(shapeName);
+        if (*cursor != '\0' || size <= 0.0f)
+        {
+            sendError("INVALID_SHAPE_COMMAND");
+            return;
+        }
+
+        handleShape(shapeName, centerX, centerY, size);
 
         return;
     }
@@ -653,7 +688,12 @@ bool parseMoveCoordinate(const char*& cursor, float& coordinate)
 // HANDLE SHAPE COMMAND
 // ============================================================
 
-void handleShape(const char* shapeName)
+void handleShape(
+    const char* shapeName,
+    float centerX,
+    float centerY,
+    float size
+)
 {
     if (strcmp(shapeName, "SQUARE") != 0 &&
         strcmp(shapeName, "TRIANGLE") != 0 &&
@@ -675,8 +715,6 @@ void handleShape(const char* shapeName)
         return;
     }
 
-    const float centerX = DEFAULT_SHAPE_CENTER_X;
-    const float centerY = DEFAULT_SHAPE_CENTER_Y;
     uint16_t generatedPoints = 0;
 
     if (strcmp(shapeName, "SQUARE") == 0)
@@ -686,7 +724,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_SHAPE_SIZE
+            size
         );
         activeShapeName = "SQUARE";
     }
@@ -697,7 +735,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_SHAPE_SIZE
+            size
         );
         activeShapeName = "TRIANGLE";
     }
@@ -708,7 +746,7 @@ void handleShape(const char* shapeName)
             MAX_SHAPE_POINTS,
             centerX,
             centerY,
-            DEFAULT_CIRCLE_RADIUS,
+            size / 2.0f,
             CIRCLE_SEGMENTS
         );
         activeShapeName = "CIRCLE";
@@ -730,6 +768,37 @@ void handleShape(const char* shapeName)
             sendError("UNREACHABLE_SHAPE");
             activeShapeName = nullptr;
             return;
+        }
+
+        if (i == 0)
+        {
+            continue;
+        }
+
+        const float deltaX = shapePath[i].x - shapePath[i - 1].x;
+        const float deltaY = shapePath[i].y - shapePath[i - 1].y;
+        const float distance =
+            sqrtf(deltaX * deltaX + deltaY * deltaY);
+        const uint16_t segmentCount = static_cast<uint16_t>(
+            ceilf(distance / MAX_CARTESIAN_SEGMENT_MM)
+        );
+
+        for (uint16_t segment = 1; segment < segmentCount; ++segment)
+        {
+            const float fraction =
+                static_cast<float>(segment) / segmentCount;
+            const IKResult intermediate =
+                inverseKinematics(
+                    shapePath[i - 1].x + deltaX * fraction,
+                    shapePath[i - 1].y + deltaY * fraction
+                );
+
+            if (!intermediate.valid)
+            {
+                sendError("UNREACHABLE_SHAPE");
+                activeShapeName = nullptr;
+                return;
+            }
         }
     }
 

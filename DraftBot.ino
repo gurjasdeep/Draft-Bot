@@ -604,7 +604,7 @@ bool parseStepCommand(char* command, char& motorName, long& steps)
     if (end == cursor ||
         errno == ERANGE ||
         parsedSteps == 0 ||
-        (*end != '\0' && *end != ' ' && *end != '\t'))
+        (*end != '\0' && *end != ' ' && *end != '\t' && *end != '\n'))
     {
         return false;
     }
@@ -940,6 +940,12 @@ void startNextCartesianSegment()
 void setPen(PenState state)
 {
     penState = state;
+    const unsigned int stepDelayMicroseconds =
+        state == PenState::UP
+            ? STEPPER_DELAY_PEN_UP_MICROSECONDS
+            : STEPPER_DELAY_PEN_DOWN_MICROSECONDS;
+    leftMotor.setStepDelay(stepDelayMicroseconds);
+    rightMotor.setStepDelay(stepDelayMicroseconds);
     penServo.write(state == PenState::UP ? PEN_UP_ANGLE : PEN_DOWN_ANGLE);
 }
 
@@ -1092,4 +1098,3 @@ void sendError(const char* message)
     Serial.print("ERROR ");
     Serial.println(message);
 }
->>>>>>> gurjas

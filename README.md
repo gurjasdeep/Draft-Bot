@@ -36,6 +36,9 @@ away from either home switch. The driver
 enable outputs are active-low: they
 are held LOW while moving and driven HIGH when disabled. Shape motion waits
 400 ms after servo commands for the pen to settle; adjust this delay if needed.
-Adjust `STEPPER_DELAY_MICROSECONDS` in `src/stepper.cpp` to change the shared
-HIGH and LOW pulse durations for normal moves, homing, and homing backoff.
-Larger values produce longer pulses and move the motors more slowly.
+Adjust `STEPPER_DELAY_PEN_UP_MICROSECONDS` and
+`STEPPER_DELAY_PEN_DOWN_MICROSECONDS` in `stepper.cpp` to change the HIGH and
+LOW pulse durations used while the pen is raised or lowered. The pen-up delay
+defaults to 2,000 microseconds for faster travel; the pen-down delay defaults
+to 8,000 microseconds for smoother drawing. Larger values move the motors more
+slowly.

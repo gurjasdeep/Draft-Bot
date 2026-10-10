@@ -1,6 +1,7 @@
 #include "stepper.h"
 
-unsigned int STEPPER_DELAY_MICROSECONDS = 8000;
+unsigned int STEPPER_DELAY_PEN_UP_MICROSECONDS = 2000;
+unsigned int STEPPER_DELAY_PEN_DOWN_MICROSECONDS = 8000;
 
 Stepper::Stepper(
     uint8_t stepPin,
@@ -18,6 +19,7 @@ Stepper::Stepper(
 
     _stepsPerRev = stepsPerRev;
     _microsteps = microsteps;
+    _stepDelayMicroseconds = STEPPER_DELAY_PEN_DOWN_MICROSECONDS;
 
     _position = 0;
     _targetPosition = 0;
@@ -119,10 +121,10 @@ HomingResult Stepper::home(
         }
 
         digitalWrite(_stepPin, HIGH);
-        delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
+        delayMicroseconds(_stepDelayMicroseconds);
 
         digitalWrite(_stepPin, LOW);
-        delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
+        delayMicroseconds(_stepDelayMicroseconds);
     }
 
     disable();
@@ -232,9 +234,9 @@ void Stepper::update()
     }
 
     digitalWrite(_stepPin, HIGH);
-    delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
+    delayMicroseconds(_stepDelayMicroseconds);
     digitalWrite(_stepPin, LOW);
-    delayMicroseconds(STEPPER_DELAY_MICROSECONDS);
+    delayMicroseconds(_stepDelayMicroseconds);
 
     // Update our software position.
     if (_direction)
@@ -258,5 +260,5 @@ bool Stepper::isMoving() const
 
 void Stepper::setStepDelay(unsigned int microseconds)
 {
-    STEPPER_DELAY_MICROSECONDS = microseconds;
+    _stepDelayMicroseconds = microseconds;
 }

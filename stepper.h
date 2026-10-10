@@ -21,7 +21,8 @@ enum class LimitPolarity
     ACTIVE_HIGH
 };
 
-extern unsigned int STEPPER_DELAY_MICROSECONDS;
+extern unsigned int STEPPER_DELAY_PEN_UP_MICROSECONDS;
+extern unsigned int STEPPER_DELAY_PEN_DOWN_MICROSECONDS;
 
 inline float radiansToDegrees(float radians)
 {
@@ -91,6 +92,7 @@ private:
 
     uint16_t _stepsPerRev;
     uint8_t _microsteps;
+    unsigned int _stepDelayMicroseconds;
 
     long _position;
     long _targetPosition;

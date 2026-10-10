@@ -16,7 +16,7 @@
 
 #define RIGHT_PULSE_PIN   7
 #define RIGHT_DIR_PIN    6
-#define RIGHT_LIMIT_PIN  13
+#define RIGHT_LIMIT_PIN  A0
 #define RIGHT_ENABLE_PIN 5
 
 

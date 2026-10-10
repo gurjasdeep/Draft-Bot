@@ -5,21 +5,31 @@ Our Problem statement is a DraftBot
 
 Connect to the board at 115200 baud and send newline-terminated serial commands:
 
+The basic Tkinter laptop controller is `gui/main.py`. Install its serial
+dependency with `python -m pip install -r requirements.txt`, then start it with
+`python gui/main.py`. Select the Arduino serial port and connect before sending
+commands. Tkinter is included with many Python installations; on Linux it may
+need to be installed separately as the `python3-tk` system package.
+
 - `HOME` homes both stepper motors. Run this before issuing motion commands.
   Each motor has 30 seconds to trigger its limit switch; otherwise the command
   reports a timeout error. Both limit switches are currently configured
   active-low and use `INPUT_PULLUP`; adjust `RIGHT_LIMIT_POLARITY` in
   `DraftBot.ino` if the right switch wiring differs.
-- `SHAPE SQUARE`, `SHAPE TRIANGLE`, or `SHAPE CIRCLE` draws a shape.
+- `SHAPE <name> <centerX> <centerY> <size>` draws a shape centered at the
+  supplied pen-tip coordinates, in millimetres. For example,
+  `SHAPE SQUARE 90 130 40`, `SHAPE TRIANGLE 90 130 40`, or
+  `SHAPE CIRCLE 90 130 40`.
 - `MOVE x y` moves the pen tip to an `(x, y)` coordinate in millimetres.
 - `STEP L +100` or `STEP R +100` moves the selected motor away from its home
   switch; a negative step count moves it toward the switch. This direct motor
   test does not require homing.
 - `PEN UP` and `PEN DOWN` move the pen servo when no motion is active.
 
-Shapes are centered at `(100 mm, 100 mm)`. The square and triangle have a
-40 mm side; the circle has a 20 mm radius and is approximated with 36
-segments. A shape is checked for IK reachability before the motors start.
+The shape `size` is the square side length, equilateral triangle height, or
+circle diameter, in millimetres. Circles are approximated with 36 segments.
+A shape's outline is checked for IK reachability at intervals of at most 1 mm
+before the motors start.
 Successful motion reports a `DONE` line when complete.
 Moves and shape edges are interpolated as straight-line paths for the pen tip,
 with Cartesian waypoints spaced at most 1 mm apart.
@@ -36,8 +46,7 @@ Inverse kinematics also limits the left link between
 is currently 20 mm. The right link is limited between
 `RIGHT_HOME_ANGLE_DEGREES` and `180 degrees - atan2(LINK_WIDTH,
 BASE_DISTANCE)`. These constraints are based on the current link-clearance
-geometry. The default square is 49 mm per side because a 50 mm square centered
-at the configured shape center exceeds this constrained workspace.
+geometry.
 The right motor direction is inverted in software so positive motion moves
 away from either home switch. The driver
 enable outputs are active-low: they

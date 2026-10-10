@@ -42,13 +42,7 @@ struct PathPoint
 // Returns 0 if the buffer is too small.
 // ============================================================
 
-uint16_t generateSquare(
-    PathPoint* buffer,
-    uint16_t maxPoints,
-    float centerX,
-    float centerY,
-    float size
-);
+uint16_t generateSquare(PathPoint* buffer,uint16_t maxPoints,float centerX,float centerY,float size);
 
 
 // ============================================================

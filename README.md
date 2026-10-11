@@ -18,18 +18,19 @@ need to be installed separately as the `python3-tk` system package.
   `DraftBot.ino` if the right switch wiring differs.
 - `SHAPE <name> <centerX> <centerY> <size>` draws a shape centered at the
   supplied pen-tip coordinates, in millimetres. For example,
-  `SHAPE SQUARE 90 130 40`, `SHAPE TRIANGLE 90 130 40`, or
-  `SHAPE CIRCLE 90 130 40`.
+  `SHAPE SQUARE 90 130 40`, `SHAPE TRIANGLE 90 130 40`,
+  `SHAPE CIRCLE 90 130 40`, or `SHAPE robo 90 130 20`.
 - `MOVE x y` moves the pen tip to an `(x, y)` coordinate in millimetres.
 - `STEP L +100` or `STEP R +100` moves the selected motor away from its home
   switch; a negative step count moves it toward the switch. This direct motor
   test does not require homing.
 - `PEN UP` and `PEN DOWN` move the pen servo when no motion is active.
 
-The shape `size` is the square side length, equilateral triangle height, or
-circle diameter, in millimetres. Circles are approximated with 36 segments.
-A shape's outline is checked for IK reachability at intervals of at most 1 mm
-before the motors start.
+The shape `size` is the square side length, equilateral triangle height, circle
+diameter, or `robo` letter height, in millimetres. The `robo` shape draws
+`ROBOCON` in a single-line block font, with a pen lift between letters. Circles
+are approximated with 36 segments. A shape's outline is checked for IK
+reachability at intervals of at most 1 mm before the motors start.
 Successful motion reports a `DONE` line when complete.
 Moves and shape edges are interpolated as straight-line paths for the pen tip,
 with Cartesian waypoints spaced at most 1 mm apart.

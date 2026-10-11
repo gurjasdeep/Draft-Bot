@@ -31,11 +31,11 @@
 //
 // 64 bytes is more than enough for these commands.
 constexpr uint16_t COMMAND_BUFFER_SIZE = 64;
-constexpr uint16_t CIRCLE_SEGMENTS = 128;
+constexpr uint16_t CIRCLE_SEGMENTS = 64;
 
 constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 
-constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
+constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 1600;
 constexpr uint8_t MOTOR_MICROSTEPS = 8;
 
 constexpr float DEFAULT_SHAPE_CENTER_X = 21.2f;
@@ -47,7 +47,7 @@ constexpr float MAX_CARTESIAN_SEGMENT_MM = 0.5f;
 constexpr float LEFT_HOME_ANGLE_DEGREES = 180.0f;
 constexpr float RIGHT_HOME_ANGLE_DEGREES = 0.0f;
 constexpr LimitPolarity RIGHT_LIMIT_POLARITY = LimitPolarity::ACTIVE_LOW;
-constexpr uint8_t PEN_UP_ANGLE = 180;
+constexpr uint8_t PEN_UP_ANGLE = 150;
 constexpr uint8_t PEN_DOWN_ANGLE = 90;
 constexpr unsigned long PEN_SETTLE_TIME_MS = 400;
 

@@ -35,11 +35,11 @@ public:
 
     if (isTriggered())
     {
-      Serial.println(F("TRIGGERED"));
+      Serial.println(TRIGGERED);
     }
     else
     {
-      Serial.println(F("NORMAL"));
+      Serial.println("NORMAL");
     }
   }
 };
@@ -102,13 +102,13 @@ public:
 
   void test(long steps)
   {
-    Serial.println(F("Forward"));
+    Serial.println("Forward");
 
     moveSteps(steps, HIGH);
 
     delay(500);
 
-    Serial.println(F("Reverse"));
+    Serial.println("Reverse");
 
     moveSteps(steps, LOW);
   }
@@ -155,17 +155,17 @@ public:
   }
   void test()
   {
-    Serial.println(F("Pen UP"));
+    Serial.println("Pen UP");
 
     penUp();
     delay(700);
 
-    Serial.println(F("Pen DOWN"));
+    Serial.println("Pen DOWN");
 
     penDown();
     delay(700);
 
-    Serial.println(F("Pen UP"));
+    Serial.println("Pen UP");
 
     penUp();
   }
@@ -207,15 +207,15 @@ bool buttonPressed()
 
 void printButtonStatus()
 {
-  Serial.print(F("Push Button: "));
+  Serial.print("Push Button: ");
 
   if (buttonPressed())
   {
-    Serial.println(F("PRESSED"));
+    Serial.println(PRESSED);
   }
   else
   {
-    Serial.println(F("RELEASED"));
+    Serial.println("RELEASED");
   }
 }
 
@@ -256,22 +256,22 @@ void printAllInputs()
 void testMotor1()
 {
   Serial.println();
-  Serial.println(F("MOTOR 1 TEST"));
+  Serial.println("MOTOR 1 TEST");
 
   motor1.test(TEST_STEPS);
 
-  Serial.println(F("Motor 1 test complete"));
+  Serial.println("Motor 1 test complete");
 }
 
 
 void testMotor2()
 {
   Serial.println();
-  Serial.println(F("MOTOR 2 TEST"));
+  Serial.println("MOTOR 2 TEST");
 
   motor2.test(TEST_STEPS);
 
-  Serial.println(F("Motor 2 test complete"));
+  Serial.println("Motor 2 test complete");
 }
 
 
@@ -291,11 +291,11 @@ void testBothMotors()
 void testPenServo()
 {
   Serial.println();
-  Serial.println(F("===== PEN SERVO TEST ====="));
+  Serial.println("===== PEN SERVO TEST =====");
 
   pen.test();
 
-  Serial.println(F("Servo test complete"));
+  Serial.println("Servo test complete");
 }
 
 
@@ -304,18 +304,18 @@ void testPenServo()
 void printMenu()
 {
   Serial.println();
-  Serial.println(F(" DRAFT BOT COMPONENT TESTER"));
+  Serial.println(" DRAFT BOT COMPONENT TESTER");
   
 
-  Serial.println(F("1 - Test Motor 1"));
-  Serial.println(F("2 - Test Motor 2"));
-  Serial.println(F("3 - Test Limit Switches"));
-  Serial.println(F("4 - Test Pen Servo"));
-  Serial.println(F("5 - Test Push Button"));
-  Serial.println(F("6 - Test Both Motors"));
-  Serial.println(F("7 - Show All Inputs"));
-  Serial.println(F("h - HOME"));
-  Serial.println(F("m - Show Menu"));
+  Serial.println("1 - Test Motor 1"));
+  Serial.println("2 - Test Motor 2"));
+  Serial.println("3 - Test Limit Switches"));
+  Serial.println("4 - Test Pen Servo"));
+  Serial.println("5 - Test Push Button"));
+  Serial.println("6 - Test Both Motors"));
+  Serial.println("7 - Show All Inputs"));
+  Serial.println("h - HOME"));
+  Serial.println("m - Show Menu"));
 
   Serial.println();
 }

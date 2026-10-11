@@ -10,7 +10,7 @@ Connect to the board at 115200 baud and send newline-terminated serial commands:
   position in software; it does not move the motors.
 - `HOME` returns both motors to the configured home angles after the software
   position has been established. The move reports `DONE HOME` when complete.
-- `HOME LIMIT` homes both motors using their limit switches. Each motor has
+- NOT USING IT -`HOME LIMIT` homes both motors using their limit switches. Each motor has
   30 seconds to trigger its switch; otherwise the command reports a timeout
   error. Both limit switches are currently configured active-low and use
   `INPUT_PULLUP`; adjust `RIGHT_LIMIT_POLARITY` in `DraftBot.ino` if the right

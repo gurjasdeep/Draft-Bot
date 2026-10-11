@@ -31,7 +31,7 @@
 //
 // 64 bytes is more than enough for these commands.
 constexpr uint16_t COMMAND_BUFFER_SIZE = 64;
-constexpr uint16_t CIRCLE_SEGMENTS = 36;
+constexpr uint16_t CIRCLE_SEGMENTS = 256;
 constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
 
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
@@ -350,7 +350,7 @@ void processCommand(char* command)
     //
     // Expected:
     //
-    //     SHAPE SQUARE
+    //     SHAPE SQUARE 30
     //     SHAPE TRIANGLE 40
     //     SHAPE CIRCLE 50
     //
@@ -358,6 +358,7 @@ void processCommand(char* command)
 
     if (strcmp(commandType, "SHAPE") == 0)
     {
+        char shapeName[20];
         char sizeText[32];
         char extra[2];
         const int shapeArguments = sscanf(
@@ -387,7 +388,7 @@ void processCommand(char* command)
             }
         }
 
-        handleShape(commandType, size);
+        handleShape(shapeName, size);
 
         return;
     }

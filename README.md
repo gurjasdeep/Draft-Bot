@@ -36,7 +36,8 @@ Shape points are checked for IK reachability before the motors start, so a
 shape is rejected if it is outside the robot's reachable workspace.
 Successful motion reports a `DONE` line when complete. Moves and shape edges
 are interpolated as straight-line paths for the pen tip, with Cartesian
-waypoints spaced at most 0.5 mm apart.
+waypoints spaced at most 0.5 mm apart. Circles use 36 segments to keep the
+firmware's path buffer small enough for memory-limited Arduino boards.
 
 The firmware currently assumes 200 full steps per motor revolution, four
 microsteps, and pen-servo positions of 90 degrees up and 0 degrees down. Match

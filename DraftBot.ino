@@ -32,15 +32,16 @@
 // 64 bytes is more than enough for these commands.
 constexpr uint16_t COMMAND_BUFFER_SIZE = 64;
 constexpr uint16_t CIRCLE_SEGMENTS = 36;
-constexpr uint16_t MAX_SHAPE_POINTS = CIRCLE_SEGMENTS + 1;
+constexpr uint16_t ROBO_POINTS = 44;
+constexpr uint16_t MAX_SHAPE_POINTS = ROBO_POINTS;
 
 constexpr uint16_t MOTOR_STEPS_PER_REVOLUTION = 200;
 constexpr uint8_t MOTOR_MICROSTEPS = 8;
 
 constexpr float MAX_CARTESIAN_SEGMENT_MM = 1.0f;
 
-constexpr uint8_t PEN_UP_ANGLE = 90;
-constexpr uint8_t PEN_DOWN_ANGLE = 0;
+constexpr uint8_t PEN_UP_ANGLE = 150;
+constexpr uint8_t PEN_DOWN_ANGLE = 90;
 constexpr unsigned long PEN_SETTLE_TIME_MS = 400;
 
 
@@ -105,6 +106,7 @@ enum class ShapeMotionPhase
 MotionType activeMotion = MotionType::NONE;
 ShapeMotionPhase shapeMotionPhase = ShapeMotionPhase::MOVING_TO_START;
 PathPoint shapePath[MAX_SHAPE_POINTS];
+bool shapePenUpBefore[MAX_SHAPE_POINTS];
 uint16_t shapePointCount = 0;
 uint16_t shapePointIndex = 0;
 const char* activeShapeName = nullptr;
@@ -299,6 +301,7 @@ void processSerial()
 // Examples:
 //
 //     SHAPE CIRCLE 100 100 40
+//     SHAPE ROBO 100 100 20
 //     MOVE 50 30
 //     PEN DOWN
 //
@@ -345,6 +348,7 @@ void processCommand(char* command)
     //     SHAPE SQUARE 100 100 40
     //     SHAPE TRIANGLE 100 100 40
     //     SHAPE CIRCLE 100 100 40
+    //     SHAPE ROBO 100 100 20
     //
     // ========================================================
 
@@ -695,9 +699,13 @@ void handleShape(
     float size
 )
 {
+    const bool isRobo =
+        strcmp(shapeName, "ROBO") == 0 ||
+        strcmp(shapeName, "robo") == 0;
     if (strcmp(shapeName, "SQUARE") != 0 &&
         strcmp(shapeName, "TRIANGLE") != 0 &&
-        strcmp(shapeName, "CIRCLE") != 0)
+        strcmp(shapeName, "CIRCLE") != 0 &&
+        !isRobo)
     {
         sendError("UNKNOWN_SHAPE");
         return;
@@ -716,8 +724,21 @@ void handleShape(
     }
 
     uint16_t generatedPoints = 0;
+    memset(shapePenUpBefore, 0, sizeof(shapePenUpBefore));
 
-    if (strcmp(shapeName, "SQUARE") == 0)
+    if (isRobo)
+    {
+        generatedPoints = generateRobo(
+            shapePath,
+            MAX_SHAPE_POINTS,
+            centerX,
+            centerY,
+            size,
+            shapePenUpBefore
+        );
+        activeShapeName = "ROBO";
+    }
+    else if (strcmp(shapeName, "SQUARE") == 0)
     {
         generatedPoints = generateSquare(
             shapePath,
@@ -770,7 +791,7 @@ void handleShape(
             return;
         }
 
-        if (i == 0)
+        if (i == 0 || shapePenUpBefore[i])
         {
             continue;
         }
@@ -1064,7 +1085,10 @@ void updateMotion()
         }
 
         shapeMotionPhase = ShapeMotionPhase::MOVING_TO_START;
-        if (!setMotorTarget(shapePath[0].x, shapePath[0].y))
+        if (!setMotorTarget(
+                shapePath[shapePointIndex].x,
+                shapePath[shapePointIndex].y
+            ))
         {
             activeMotion = MotionType::NONE;
             activeShapeName = nullptr;
@@ -1111,11 +1135,26 @@ void updateMotion()
         }
 
         shapeMotionPhase = ShapeMotionPhase::DRAWING;
-        shapePointIndex = 1;
+        if (shapePointIndex == 0)
+        {
+            shapePointIndex = 1;
+        }
+        else
+        {
+            ++shapePointIndex;
+        }
     }
     else
     {
         ++shapePointIndex;
+        if (shapePointIndex < shapePointCount &&
+            shapePenUpBefore[shapePointIndex])
+        {
+            setPen(PenState::UP);
+            shapeMotionPhase = ShapeMotionPhase::LIFTING_FOR_TRAVEL;
+            shapePhaseStartedAt = millis();
+            return;
+        }
     }
 
     if (shapePointIndex >= shapePointCount)

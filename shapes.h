@@ -102,3 +102,12 @@ uint16_t generateCircle(
     float radius,
     uint16_t segments
 );
+
+uint16_t generateRobo(
+    PathPoint* buffer,
+    uint16_t maxPoints,
+    float centerX,
+    float centerY,
+    float letterHeight,
+    bool* penUpBefore
+);

@@ -280,3 +280,74 @@ uint16_t generateCircle(
 
     return segments + 1;
 }
+
+uint16_t generateRobo(
+    PathPoint* buffer,
+    uint16_t maxPoints,
+    float centerX,
+    float centerY,
+    float letterHeight,
+    bool* penUpBefore
+)
+{
+    // Each letter is a pen stroke in a simple single-line font.
+    // Coordinates are normalized to a 0.6-by-1.0 letter cell.
+    static const int8_t letterPoints[][2] =
+    {
+        // R
+        {0, 0}, {0, 100}, {60, 100}, {60, 55}, {0, 55}, {60, 0},
+        // O
+        {0, 50}, {0, 100}, {60, 100}, {60, 0}, {0, 0}, {0, 50},
+        // B
+        {0, 0}, {0, 100}, {40, 100}, {60, 85}, {60, 65}, {40, 50},
+        {0, 50}, {40, 50}, {60, 35}, {60, 15}, {40, 0}, {0, 0},
+        // O
+        {0, 50}, {0, 100}, {60, 100}, {60, 0}, {0, 0}, {0, 50},
+        // C
+        {60, 100}, {0, 100}, {0, 0}, {60, 0},
+        // O
+        {0, 50}, {0, 100}, {60, 100}, {60, 0}, {0, 0}, {0, 50},
+        // N
+        {0, 0}, {0, 100}, {60, 0}, {60, 100}
+    };
+    constexpr uint16_t POINT_COUNT =
+        sizeof(letterPoints) / sizeof(letterPoints[0]);
+    constexpr uint16_t LETTER_STARTS[] = {0, 6, 12, 24, 30, 34, 40};
+    constexpr float LETTER_WIDTH = 0.6f;
+    constexpr float LETTER_ADVANCE = 0.8f;
+    constexpr uint16_t LETTER_COUNT =
+        sizeof(LETTER_STARTS) / sizeof(LETTER_STARTS[0]);
+    const float textWidth =
+        ((LETTER_COUNT - 1) * LETTER_ADVANCE + LETTER_WIDTH) * letterHeight;
+    const float startX = centerX - textWidth / 2.0f;
+    const float baselineY = centerY - letterHeight / 2.0f;
+
+    if (buffer == nullptr || penUpBefore == nullptr ||
+        maxPoints < POINT_COUNT)
+    {
+        return 0;
+    }
+
+    uint16_t letterIndex = 0;
+    for (uint16_t i = 0; i < POINT_COUNT; ++i)
+    {
+        if (letterIndex + 1 < LETTER_COUNT &&
+            i == LETTER_STARTS[letterIndex + 1])
+        {
+            ++letterIndex;
+        }
+
+        const uint16_t pointInLetter = i - LETTER_STARTS[letterIndex];
+        buffer[i] =
+        {
+            startX +
+                (letterIndex * LETTER_ADVANCE +
+                 (letterPoints[i][0] / 100.0f) * LETTER_WIDTH) *
+                    letterHeight,
+            baselineY + (letterPoints[i][1] / 100.0f) * letterHeight
+        };
+        penUpBefore[i] = pointInLetter == 0 && letterIndex != 0;
+    }
+
+    return POINT_COUNT;
+}
